@@ -1,4 +1,4 @@
-/*socket tcp服务器端*/
+/*rdma modified socket rdma服务器端*/
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -68,6 +68,8 @@ int main()
 		return ret;
 	}
 	serverSocket = rsocket(AF_INET, SOCK_STREAM, 0);
+		printf("rsocket got: %d\n", serverSocket);
+
 	if (serverSocket < 0)
 	{
 		perror("socket");

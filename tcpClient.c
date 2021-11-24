@@ -111,231 +111,56 @@ int main()
 	printf("connected with destination host...\n");
 	// while (1)
 	// {
-		while (1)
-		{
-			printf("Input your world:>");
-			scanf("%s", sendbuf);
-			printf("\n");
+	while (1)
+	{
+		printf("Input your world:>");
+		scanf("%s", sendbuf);
+		printf("\n");
 
-			fds.events = POLLOUT;
-			// printf(" will do_poll for send\n");
-			// ret = do_poll(&fds, poll_timeout);
-			// if (ret)
-			// {
-			// 	perror("do_poll err");
-			// 	return ret;
-			// }
-			ret = poll(&fds, 1, poll_timeout);
-			if (ret > 0 && (fds.revents & (POLLOUT | POLLHUP | POLLERR)))
-			{
-				if (fds.revents & POLLHUP)
-				{
-					printf("polled pollhup\n");
-				}
-				if (fds.revents & POLLERR)
-				{
-					printf("polled pollerr\n");
-				}
-				printf(" will rsend\n");
-				// ret = rsend(client, buffer, iDataNum, 0);
-				ret = send(clientSocket, sendbuf, strlen(sendbuf), 0);
-
-				if (ret > 0)
-				{
-					sendSum += ret;
-				}
-				else if (errno != EWOULDBLOCK && errno != EAGAIN)
-				{
-					perror("rsend");
-					return ret;
-				}
-
-				printf(" rsend return %d, data is %s\n", ret, sendbuf);
-				break;
-			}
-			else
-			{
-				continue;
-			}
-
-		}
-			// 循环poll 直到获取到pollin 事件
-
-		// while (1)
+		fds.events = POLLOUT;
+		// printf(" will do_poll for send\n");
+		// ret = do_poll(&fds, poll_timeout);
+		// if (ret)
 		// {
-		// 	fds.events = POLLIN;
-		// 	// printf(" will do_poll for recv\n");
-		// 	// ret = do_poll(&fds, poll_timeout);
-		// 	// if (ret)
-		// 	// {
-		// 	// 	perror("do_poll err");
-		// 	// 	return ret;
-		// 	// }
-
-		// 	ret = poll(&fds, 1, poll_timeout);
-		// 	if (ret > 0 && (fds.revents & (POLLIN | POLLHUP | POLLERR)))
-		// 	{
-		// 		if (fds.revents & POLLHUP)
-		// 		{
-		// 			printf("polled pollhup\n");
-		// 		}
-		// 		if (fds.revents & POLLERR)
-		// 		{
-		// 			printf("polled pollerr\n");
-		// 		}
-		// 		printf(" will rrecv\n");
-		// 		iDataNum = recv(clientSocket, recvbuf, 200, 0);
-		// 		// iDataNum = rrecv(client, buffer, 1024, 0);
-		// 		if (iDataNum > 0)
-		// 		{
-		// 			recvSum += iDataNum;
-		// 		}
-		// 		else if (errno != EWOULDBLOCK && errno != EAGAIN)
-		// 		{
-		// 			perror("rrecv");
-		// 			printf("recv %d\n", iDataNum);
-		// 			// break; //
-		// 			return iDataNum;
-		// 		}
-		// 		if (iDataNum < 0)
-		// 		{
-		// 			perror("recv");
-		// 			// continue;
-		// 			return iDataNum;
-		// 		}
-		// 		recvbuf[iDataNum] = '\0';
-		// 		if (strcmp(recvbuf, "quit") == 0)
-		// 			// break;
-		// 			return iDataNum;
-
-		// 		printf("recv %d, data is %s\n", iDataNum, recvbuf);
-
-		// 		recvbuf[iDataNum] = '\0';
-		// 		break;
-		// 	}
-		// 	else
-		// 	{
-		// 		continue;
-		// 	}
+		// 	perror("do_poll err");
+		// 	return ret;
 		// }
-	// }
+		ret = poll(&fds, 1, poll_timeout);
+		if (ret > 0 && (fds.revents & (POLLOUT | POLLHUP | POLLERR)))
+		{
+			if (fds.revents & POLLHUP)
+			{
+				printf("polled pollhup\n");
+			}
+			if (fds.revents & POLLERR)
+			{
+				printf("polled pollerr\n");
+			}
+			printf(" will rsend\n");
+			// ret = rsend(client, buffer, iDataNum, 0);
+			ret = send(clientSocket, sendbuf, strlen(sendbuf), 0);
+
+			if (ret > 0)
+			{
+				sendSum += ret;
+			}
+			else if (errno != EWOULDBLOCK && errno != EAGAIN)
+			{
+				perror("rsend");
+				return ret;
+			}
+
+			printf(" rsend return %d, data is %s\n", ret, sendbuf);
+			break;
+		}
+		else
+		{
+			continue;
+		}
+	}
 
 	printf("sleep 2 sec, then close socket %d\n", clientSocket);
 	sleep(2);
-	int clientSocket2;
-	if ((clientSocket2 = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-	{
-		perror("socket");
-		return 1;
-	}
-
-	// 设置socket 为非阻塞
-	fcntl(clientSocket2, F_SETFL, O_NONBLOCK);
-
-	// struct pollfd fds;
-	 ret = 0;
-	 poll_timeout = 0;
-	fds.fd = clientSocket2;
-
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(SERVER_PORT);
-	//指定服务器端的ip，本地测试：127.0.0.1
-	//inet_addr()函数，将点分十进制IP转换成网络字节序IP
-	serverAddr.sin_addr.s_addr = inet_addr("192.168.92.2");
-	// shutdown(clientSocket,SHUT_RDWR);
 	close(clientSocket);
-
-	ret = connect(clientSocket2, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
-
-	if (ret && (errno != EINPROGRESS))
-	{
-		if (ret < 0)
-		{
-			perror("connect");
-			return 1;
-		}
-		perror("rconnect");
-		if (clientSocket2)
-			close(clientSocket2);
-	}
-
-	if (ret && (errno == EINPROGRESS))
-	{
-		perror("rconnect EINPROGRESS");
-		fds.events = POLLOUT;
-		ret = do_poll(&fds, poll_timeout);
-		if (ret)
-		{
-			perror("rpoll");
-			if (clientSocket2)
-				close(clientSocket2);
-		}
-		socklen_t len;
-		int err;
-		len = sizeof err;
-		ret = getsockopt(clientSocket2, SOL_SOCKET, SO_ERROR, &err, &len);
-		if (ret)
-			if (clientSocket2)
-				close(clientSocket2);
-		if (err)
-		{
-			ret = -1;
-			errno = err;
-			perror("async rconnect");
-			return ret;
-		}
-	}
-
-	printf("connected with destination host...\n");
-	while (1)
-		{
-			printf("Input your world:>");
-			scanf("%s", sendbuf);
-			printf("\n");
-
-			fds.events = POLLOUT;
-			// printf(" will do_poll for send\n");
-			// ret = do_poll(&fds, poll_timeout);
-			// if (ret)
-			// {
-			// 	perror("do_poll err");
-			// 	return ret;
-			// }
-			ret = poll(&fds, 1, poll_timeout);
-			if (ret > 0 && (fds.revents & (POLLOUT | POLLHUP | POLLERR)))
-			{
-				if (fds.revents & POLLHUP)
-				{
-					printf("polled pollhup\n");
-				}
-				if (fds.revents & POLLERR)
-				{
-					printf("polled pollerr\n");
-				}
-				printf(" will rsend\n");
-				// ret = rsend(client, buffer, iDataNum, 0);
-				ret = send(clientSocket2, sendbuf, strlen(sendbuf), 0);
-
-				if (ret > 0)
-				{
-					sendSum += ret;
-				}
-				else if (errno != EWOULDBLOCK && errno != EAGAIN)
-				{
-					perror("rsend");
-					return ret;
-				}
-
-				printf(" rsend return %d, data is %s\n", ret, sendbuf);
-				break;
-			}
-			else
-			{
-				continue;
-			}
-
-		}
-
-
 	return 0;
 }

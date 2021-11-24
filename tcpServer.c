@@ -107,8 +107,8 @@ int main()
 	printf("Listening on: %s %s\n", inet_ntoa(server_addr.sin_addr), port);
 	// listen fd 设为非阻塞
 	fcntl(serverSocket, F_SETFL, O_NONBLOCK);
-	while (1)
-	{
+	// while (1)
+	// {
 
 		struct pollfd lfds;
 		lfds.fd = serverSocket;
@@ -241,10 +241,10 @@ int main()
 			}
 		}
 
-	// client_close:
-		// close(client);
-	}
-	// close(serverSocket);
+	client_close:
+		close(client);
+	// }
+	close(serverSocket);
 
 	return 0;
 }

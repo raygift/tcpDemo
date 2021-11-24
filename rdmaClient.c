@@ -1,4 +1,4 @@
-/*socket tcp客户端*/
+/*rdma modified socket tcp客户端*/
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -55,7 +55,8 @@ int main()
 	}
 
 	// 设置socket 为非阻塞
-	rfcntl(clientSocket, F_SETFL, O_NONBLOCK);
+	rfcntl(clientSocket, F_SETFL, O_NONBLOCK | FD_CLOEXEC);
+	// fcntl(clientSocket, F_SETFL, FD_CLOEXEC);
 
 	struct pollfd fds;
 	int ret = 0;
@@ -109,110 +110,106 @@ int main()
 	}
 
 	printf("connected with destination host...\n");
-
-	// while (1)
-	// {
 	printf("Input your world:>");
 	scanf("%s", sendbuf);
 	printf("\n");
+	// while (1)
+	// {
 
-	while (1)
-	{
-		fds.events = POLLOUT;
-		// printf(" will do_poll for send\n");
-		// ret = do_poll(&fds, poll_timeout);
-		// if (ret)
-		// {
-		// 	perror("do_poll err");
-		// 	return ret;
-		// }
-		ret = rpoll(&fds, 1, poll_timeout);
-		if (ret > 0)
+		while (1)
 		{
-			printf("before rsend rpolled %d\n", fds.revents);
-			printf(" will rsend\n");
-			// ret = rsend(client, buffer, iDataNum, 0);
-			ret = rsend(clientSocket, sendbuf, strlen(sendbuf), 0);
-
+			fds.events = POLLOUT;
+			// printf(" will do_poll for send\n");
+			// ret = do_poll(&fds, poll_timeout);
+			// if (ret)
+			// {
+			// 	perror("do_poll err");
+			// 	return ret;
+			// }
+			ret = rpoll(&fds, 1, poll_timeout);
 			if (ret > 0)
 			{
-				sendSum += ret;
+				printf("before rsend rpolled %d\n", fds.revents);
+				printf(" will rsend\n");
+				// ret = rsend(client, buffer, iDataNum, 0);
+				ret = rsend(clientSocket, sendbuf, strlen(sendbuf), 0);
+
+				if (ret > 0)
+				{
+					sendSum += ret;
+				}
+				else if (errno != EWOULDBLOCK && errno != EAGAIN)
+				{
+					perror("rsend");
+					return ret;
+				}
+
+				printf(" rsend return %d, data is %s\n", ret, sendbuf);
+				break;
 			}
-			else if (errno != EWOULDBLOCK && errno != EAGAIN)
+			else
 			{
-				perror("rsend");
-				return ret;
+				continue;
 			}
-
-			printf(" rsend return %d, data is %s\n", ret, sendbuf);
-			break;
-
 		}
-		else
+
+		while (1)
 		{
-			continue;
+			// 循环poll 直到获取到pollin 事件
+
+			fds.events = POLLIN;
+			// printf(" will do_poll for recv\n");
+			// ret = do_poll(&fds, poll_timeout);
+			// if (ret)
+			// {
+			// 	perror("do_poll err");
+			// 	return ret;
+			// }
+			ret = rpoll(&fds, 1, poll_timeout);
+			if (ret > 0)
+			{
+				printf("before rrecv rpolled %d\n", fds.revents);
+				printf(" will rrecv\n");
+				iDataNum = rrecv(clientSocket, recvbuf, 200, 0);
+				// iDataNum = rrecv(client, buffer, 1024, 0);
+				if (iDataNum == 0)
+				{
+					perror("recv");
+					printf("recv %d\n", iDataNum);
+					return iDataNum;
+				}
+				if (iDataNum > 0)
+				{
+					recvSum += iDataNum;
+				}
+				else if (errno != EWOULDBLOCK && errno != EAGAIN)
+				{
+					perror("rrecv");
+					printf("recv %d\n", iDataNum);
+					break; //return iDataNum;
+				}
+
+				if (iDataNum < 0)
+				{
+					perror("recv");
+					// continue;
+					return iDataNum;
+				}
+				recvbuf[iDataNum] = '\0';
+				if (strcmp(recvbuf, "quit") == 0)
+					// break;
+					return iDataNum;
+
+				recvbuf[iDataNum] = '\0';
+				printf("recv %d, data is %s\n", iDataNum, recvbuf);
+
+				break;
+			}
+			else
+			{
+				continue;
+			}
 		}
-	}
-
-	while (1)
-	{
-		// 循环poll 直到获取到pollin 事件
-
-		fds.events = POLLIN;
-		// printf(" will do_poll for recv\n");
-		// ret = do_poll(&fds, poll_timeout);
-		// if (ret)
-		// {
-		// 	perror("do_poll err");
-		// 	return ret;
-		// }
-		ret = rpoll(&fds, 1, poll_timeout);
-		if (ret > 0)
-		{
-			printf("before rrecv rpolled %d\n", fds.revents);
-			printf(" will rrecv\n");
-			iDataNum = rrecv(clientSocket, recvbuf, 200, 0);
-			// iDataNum = rrecv(client, buffer, 1024, 0);
-			if (iDataNum == 0)
-			{
-				perror("recv");
-				printf("recv %d\n", iDataNum);
-				return iDataNum;
-			}
-			if (iDataNum > 0)
-			{
-				recvSum += iDataNum;
-			}
-			else if (errno != EWOULDBLOCK && errno != EAGAIN)
-			{
-				perror("rrecv");
-				printf("recv %d\n", iDataNum);
-				break; //return iDataNum;
-			}
-
-			if (iDataNum < 0)
-			{
-				perror("recv");
-				// continue;
-				return iDataNum;
-			}
-			recvbuf[iDataNum] = '\0';
-			if (strcmp(recvbuf, "quit") == 0)
-				// break;
-				return iDataNum;
-
-
-			recvbuf[iDataNum] = '\0';
-			printf("recv %d, data is %s\n", iDataNum, recvbuf);
-
-			break;
-
-		}
-		else
-		{
-			continue;
-		}
-	}
 	// }
 	printf("sleep 2 sec, then close socket %d\n", clientSocket);
 	sleep(2);
