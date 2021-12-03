@@ -12,11 +12,11 @@ g++ rdmaClient.c -lrdmacm -libverbs -o rc.out
 
 ```bash
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/vm1/Desktop/CProgram/rdma-core-comments/build/lib
+# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/vm1/Desktop/CProgram/rdma-core/build/lib
 
-g++ rdmaServer.c -lrdmacm -libverbs -L/home/vm1/Desktop/CProgram/rdma-core-comments/build/lib -o rs.out
+g++ rdmaServer.c -lrdmacm -libverbs -L/home/vm1/Desktop/CProgram/rdma-core/build/lib -Wl,-rpath,/home/vm1/Desktop/CProgram/rdma-core/build/lib -o rs.out
 
-g++ rdmaClient.c -lrdmacm -libverbs -L/home/vm1/Desktop/CProgram/rdma-core-comments/build/lib -o rc.out
+g++ rdmaClient.c -lrdmacm -libverbs -L/home/vm1/Desktop/CProgram/rdma-core/build/lib -Wl,-rpath,/home/vm1/Desktop/CProgram/rdma-core/build/lib -o rc.out
 
 ```
 
